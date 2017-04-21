@@ -1,4 +1,4 @@
-# evnt-hub [![Build Status](https://travis-ci.org/auzmartist/evnt-hub.svg?branch=master)](https://travis-ci.org/auzmartist/evnt-hub)
+# evnt-hub [![npm version](https://badge.fury.io/js/evnt-hub.svg)](https://badge.fury.io/js/evnt-hub) [![Build Status](https://travis-ci.org/auzmartist/evnt-hub.svg?branch=master)](https://travis-ci.org/auzmartist/evnt-hub)
 > A tiny (3 KB) pub sub JS module with added functionality to post messages across iFrame boundaries with window.postMessage.
 
 ## Dependencies
