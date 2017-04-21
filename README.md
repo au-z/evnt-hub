@@ -8,7 +8,6 @@ None. **event-hub's** postMessage features are [well supported](https://develope
 ```bash
 npm i --save event-hub
 ```
-
 ```html
 <script src="node_modules/event-hub/lib/EventHub.min.js"></script>
 ```
