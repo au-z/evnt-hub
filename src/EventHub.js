@@ -73,8 +73,7 @@ export default (function(options) {
 	hub.subscribe('_init_', (type, payload) => {
 		hubId = payload.toString();
 	});
-
-	window.addEventListener('message', function(event) {
+	window.addEventListener('message', function(event) {
 		let origin = event.origin || event.originalEvent.origin;
 		if(origin !== options.targetOrigin) {
 			console.warn('[EventHub] message received from unknown origin. Ignoring.');

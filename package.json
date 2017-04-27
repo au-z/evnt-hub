@@ -6,6 +6,7 @@
   "scripts": {
     "build": "webpack --env build",
     "dev": "webpack --progress --colors --watch --env dev",
+    "dev:demo": "concurrent \"npm run dev\" \"node server.js\"",
     "test": "mocha --compilers js:babel-core/register --colors ./test/*.spec.js",
     "test:watch": "mocha --compilers js:babel-core/register --colors -w ./test/*.spec.js"
   },
@@ -33,10 +34,12 @@
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-es2015": "^6.24.1",
     "chai": "^3.5.0",
+    "concurrently": "^3.4.0",
     "cross-env": "^4.0.0",
     "eslint": "^3.19.0",
     "eslint-config-auz": "^1.0.0",
     "eslint-loader": "^1.7.1",
+    "express": "^4.15.2",
     "jsdom": "^9.12.0",
     "jsdom-global": "^2.1.1",
     "mocha": "^3.2.0",

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Event Hub Demo</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="/lib/EventHub.js"></script>
+	</head>
+	<body>
+		<h2>Event Hub Demo</h2>
+		<button onclick="post()">Post _init_</button>
+		<div id="hub-output"></div>
+		<script>
+			hub = EventHub({targetOrigin: 'http://localhost:8080'});
+			function post() {
+				window.postMessage({_type: '_init_', payload: '0'}, 'http://localhost:8080');
+			}
+
+			let output = document.getElementById('hub-output');
+			hub.subscribe('_init_', function(type, payload) {
+				output.innerHTML += '<p>payload: ' + payload + '</p>';
+			});
+		</script>
+	</body>
+</html>

@@ -24,5 +24,6 @@ module.exports = {
 	extends: ['eslint:recommended', 'auz'],
 	rules: {
 		'max-len': ['error', 120],
+		'linebreak-style': 0,
 	},
 };
