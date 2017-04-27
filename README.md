@@ -14,7 +14,7 @@ npm i --save evnt-hub
 
 ## Getting Started
 In order to post messages to host window using window.postMessage,
-you will need to know the origin of the host. 
+you will need to know the origin of the host.
 ```javascript
 let hub = new EventHub({
   targetOrigin: 'http://your.target-origin.here',
@@ -29,6 +29,7 @@ Further features are under consideration regarding the use of '**\***' to publis
 ```bash
 npm install
 npm run dev
+npm run dev:demo
 npm run build
 npm run test
 npm run test:watch
