@@ -6,7 +6,7 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.0.2';
+	const version = '1.0.3';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
 	if(!options.originRegex) console.error('[EventHub] originRegex not provided.');

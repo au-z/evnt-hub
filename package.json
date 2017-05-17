@@ -1,6 +1,6 @@
 {
   "name": "evnt-hub",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Event subscription library with window.postMessage support.",
   "main": "index.js",
   "scripts": {

@@ -1,1 +1,1 @@
-module.exports = require('./lib/EventHub.js');
+module.exports = require('./lib/EventHub.min.js');
