@@ -6,9 +6,10 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.0.0';
+	const version = '1.0.2';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
+	if(!options.originRegex) console.error('[EventHub] originRegex not provided.');
 	let hubId = null;
 	let nextTickFn = function(){};
 
@@ -75,7 +76,8 @@ export default (function(options) {
 	});
 	window.addEventListener('message', function(event) {
 		let origin = event.origin || event.originalEvent.origin;
-		if(origin !== options.targetOrigin) {
+		let ok = isOriginValid(origin);
+		if(!ok) {
 			console.warn('[EventHub] message received from unknown origin. Ignoring.');
 			return;
 		}
@@ -84,6 +86,16 @@ export default (function(options) {
 		}
 		hub.publish(event.data._type, event.data.payload);
 	});
+
+	/**
+	 * Returns true if the origin matches the regex
+	 * @param {String} origin the origin of the event
+	 * @return {Boolean}
+	 */
+	function isOriginValid(origin) {
+		let match = options.originRegex.exec(origin);
+		return !!(match);
+	}
 
 	/**
 	 * Publishes the event and sends a window.postMessage to the targetOrigin
@@ -120,6 +132,7 @@ export default (function(options) {
 		version,
 		emit,
 		nextTick,
+		isOriginValid,
 		publish: hub.publish,
 		subscribe: hub.subscribe,
 		unsubscribe: hub.unsubscribe,

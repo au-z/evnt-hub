@@ -18,10 +18,24 @@ describe('Given a new instance of eventHub', () => {
 	});
 	it('requires a targetOrigin option', () => {
 		let stub = sinon.stub(console, 'error');
-		hub = new EventHub(/* no target origin option */);
+		new EventHub({
+			/* no target origin option */
+			originRegex: /http:\/\/.*/i,
+		});
 		expect(stub.calledOnce).to.be.true;
-		let arg = stub.getCall(0).args[0];
+		const arg = stub.getCall(0).args[0];
 		expect(arg).to.be.equal('[EventHub] targetOrigin not provided.');
+		stub.restore();
+	});
+	it('requires a originRegex option', () => {
+		let stub = sinon.stub(console, 'error');
+		new EventHub({
+			targetOrigin: 'http://protolabs.com',
+			/* no origin regex option */
+		});
+		expect(stub.calledOnce).to.be.true;
+		const arg = stub.getCall(0).args[0];
+		expect(arg).to.be.equal('[EventHub] originRegex not provided.');
 		stub.restore();
 	});
 	it('assigns a hubId on _init_', () => {
@@ -76,5 +90,25 @@ describe('Given a new instance of eventHub', () => {
 			expect(stub.calledOnce).to.be.true;
 		});
 		stub.restore();
+	});
+	it('listens for new messages', () => {
+		let stub = sinon.stub(window, 'addEventListener');
+		new EventHub({
+			targetOrigin: 'blah',
+			originRegex: /blah/i,
+		});
+		expect(stub.calledOnce).to.be.true;
+		stub.restore();
+	});
+	it('checks for valid origins', () => {
+		hub = new EventHub({
+			targetOrigin: 'http://test.localhost',
+			originRegex: /^(https?):\/\/.*(\.?protolabs)(\.com)$/i,
+		});
+		expect(hub.isOriginValid('http://bad.origin.biz')).to.be.false;
+		expect(hub.isOriginValid('http://protolabs.com')).to.be.true;
+		expect(hub.isOriginValid('https://protolabs.com')).to.be.true;
+		expect(hub.isOriginValid('http://protolabs.com/')).to.be.false;
+		expect(hub.isOriginValid('https://proxy.protolabs.com')).to.be.true;
 	});
 });
