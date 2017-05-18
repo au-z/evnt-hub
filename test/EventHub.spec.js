@@ -14,13 +14,28 @@ describe('Given a new instance of eventHub', () => {
 	before(() => {
 		hub = new EventHub({
 			targetOrigin: 'http://localhost:8000',
+			originRegex: /http:\/\/.*/i,
+			targetWindow: window.parent,
 		});
+	});
+	it('can initialize with a hubId', () => {
+		let hub2 = new EventHub({
+			hubId: -1,
+			targetOrigin: 'http://localhost:8000',
+			originRegex: /http:\/\/.*/i,
+			targetWindow: window.parent,
+		});
+		let warnSpy = sinon.spy(console, 'warn');
+		hub2.emit('foo', {bar: 'baz2'});
+		expect(warnSpy.notCalled).to.be.true;
+		warnSpy.restore();
 	});
 	it('requires a targetOrigin option', () => {
 		let stub = sinon.stub(console, 'error');
 		new EventHub({
 			/* no target origin option */
 			originRegex: /http:\/\/.*/i,
+			targetWindow: window.parent,
 		});
 		expect(stub.calledOnce).to.be.true;
 		const arg = stub.getCall(0).args[0];
@@ -31,6 +46,7 @@ describe('Given a new instance of eventHub', () => {
 		let stub = sinon.stub(console, 'error');
 		new EventHub({
 			targetOrigin: 'http://protolabs.com',
+			targetWindow: window.parent,
 			/* no origin regex option */
 		});
 		expect(stub.calledOnce).to.be.true;
@@ -42,18 +58,19 @@ describe('Given a new instance of eventHub', () => {
 		let postMessageStub = sinon.stub(window.parent, 'postMessage');
 		let warnStub = sinon.stub(console, 'warn');
 		hub.emit('foo', {bar: 'baz'});
-		expect(warnStub.getCall(0).args[0]).to.be.equal('[EventHub] no hubId provided.');
+		expect(warnStub.getCall(0).args[0]).to.be.equal('[EventHub] has no hubId.');
+		warnStub.reset();
 		hub.publish('_init_', 4);
-		hub.emit('foo', {bar: 'baz2'});
-		expect(warnStub.notCalled);
-		warnStub.restore();
+		hub.nextTick(() => {
+			hub.emit('foo', {bar: 'baz2'});
+			expect(warnStub.notCalled).to.be.true;
+			warnStub.restore();
+		});
 		postMessageStub.restore();
 	});
 	it('returns a token on subscribe', () => expect(hub.subscribe('foo')).to.be.equal('1'));
 	it('increments tokens', () => expect(hub.subscribe('foo')).to.be.equal('2'));
-	it('returns token on unsubscribe', () => {
-		expect(hub.unsubscribe('2')).to.be.equal('2');
-	});
+	it('returns token on unsubscribe', () => expect(hub.unsubscribe('2')).to.be.equal('2'));
 	it('returns false if cannot unsubscribe', () => expect(hub.unsubscribe('3')).to.be.false);
 	it('calls func on publish', () => {
 		let cb = sinon.spy();
@@ -96,19 +113,31 @@ describe('Given a new instance of eventHub', () => {
 		new EventHub({
 			targetOrigin: 'blah',
 			originRegex: /blah/i,
+			targetWindow: window.parent,
 		});
 		expect(stub.calledOnce).to.be.true;
 		stub.restore();
 	});
 	it('checks for valid origins', () => {
-		hub = new EventHub({
+		const _hub = new EventHub({
 			targetOrigin: 'http://test.localhost',
+			targetWindow: window.parent,
 			originRegex: /^(https?):\/\/.*(\.?protolabs)(\.com)$/i,
 		});
-		expect(hub.isOriginValid('http://bad.origin.biz')).to.be.false;
-		expect(hub.isOriginValid('http://protolabs.com')).to.be.true;
-		expect(hub.isOriginValid('https://protolabs.com')).to.be.true;
-		expect(hub.isOriginValid('http://protolabs.com/')).to.be.false;
-		expect(hub.isOriginValid('https://proxy.protolabs.com')).to.be.true;
+		expect(_hub.isOriginValid('http://bad.origin.biz')).to.be.false;
+		expect(_hub.isOriginValid('http://protolabs.com')).to.be.true;
+		expect(_hub.isOriginValid('https://protolabs.com')).to.be.true;
+		expect(_hub.isOriginValid('http://protolabs.com/')).to.be.false;
+		expect(_hub.isOriginValid('https://proxy.protolabs.com')).to.be.true;
+	});
+	it('posts to window arg and uses options.targetWindow as fallback', () => {
+		let fakeWindow = {postMessage: () => {/* do-nothing */}};
+		let postMessageSpy = sinon.spy(fakeWindow, 'postMessage');
+		let targetWindowPostMessageSpy = sinon.spy(window.parent, 'postMessage');
+		hub.emit('blah', {payload: 'foo'});
+		expect(targetWindowPostMessageSpy.calledOnce).to.be.true;
+		hub.emit('blah', {payload: 'foo'}, fakeWindow);
+		expect(postMessageSpy.calledOnce).to.be.true;
+		targetWindowPostMessageSpy.restore();
 	});
 });

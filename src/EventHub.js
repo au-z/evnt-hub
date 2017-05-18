@@ -6,11 +6,12 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.0.3';
+	const version = '1.1.0';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
 	if(!options.originRegex) console.error('[EventHub] originRegex not provided.');
-	let hubId = null;
+	const targetWindow = options.targetWindow || null;
+	let hubId = options.hubId || null;
 	let nextTickFn = function(){};
 
 	const hub = (function(q) {
@@ -81,9 +82,7 @@ export default (function(options) {
 			console.warn('[EventHub] message received from unknown origin. Ignoring.');
 			return;
 		}
-		if(!event.data || !event.data._type || !event.data.payload) {
-			console.error('[EventHub] No type or payload sent with message data');
-		}
+		if(!event.data || !event.data._type || !event.data.payload) return;
 		hub.publish(event.data._type, event.data.payload);
 	});
 
@@ -101,22 +100,29 @@ export default (function(options) {
 	 * Publishes the event and sends a window.postMessage to the targetOrigin
 	 * @param {String} _type the event name and type of postMessage
 	 * @param {Object} payload the event and postMessage payload
+	 * @param {Object} window the window to postMessage to
 	 */
-	function emit(_type, payload = {}) {
+	function emit(_type, payload = {}, window) {
 		hub.publish(_type, payload);
-		post(_type, payload);
+		post(_type, payload, window);
 	}
 
 	/**
 	 * Sends a window.postMessage to the targetOrigin
 	 * @param {String} _type the type of postMessage
 	 * @param {Object} payload the postMessage payload
+	 * @param {Object} window the window to postMessage to (fallback: options.targetWindow)
 	 */
-	function post(_type, payload = {}) {
-		if(window.parent) {
-		if(!hubId) console.warn('[EventHub] no hubId provided.');
-		payload._hubId = hubId;
-			window.parent.postMessage({_type, payload}, options.targetOrigin);
+	function post(_type, payload = {}, window) {
+		const isObj = (typeof(payload) === Object);
+		// use the targetWindow as a fallback
+		window = window || targetWindow;
+		if(window) {
+			if(!hubId) console.warn('[EventHub] has no hubId.');
+			if(isObj) payload._hubId = hubId;
+			window.postMessage({_type, payload}, options.targetOrigin);
+		} else {
+			console.error('[EventHub] cannot postMessage to falsy window.');
 		}
 	}
 

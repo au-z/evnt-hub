@@ -12,6 +12,8 @@ module.exports = {
 		window: true,
 		describe: true,
 		before: true,
+		beforeEach: true,
+		afterEach: true,
 		it: true,
 		expect: true,
 		sinon: true,
