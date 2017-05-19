@@ -6,7 +6,7 @@ None. **evnt-hub's** postMessage features are [well supported](https://developer
 
 ## Installation
 ```bash
-npm i --save evnt-hub
+yarn add evnt-hub --save
 ```
 ```html
 <script src="node_modules/evnt-hub/lib/EventHub.min.js"></script>
@@ -17,18 +17,29 @@ In order to post messages to host window using window.postMessage,
 you will need to know the origin of the host.
 ```javascript
 let hub = new EventHub({
-  targetOrigin: 'http://your.target-origin.here',
+  targetOrigin: 'http://your.target-origin.here', // the origin you want to send to
+  originRegex: /^(https?):\/\/.*(my-domain)(\.com)$/, // a regex expression for all the accepted origins
+  targetWindow: window.parent, // the postMessage target window
+  hubId: -1, //can be optionally issued with '_init_' emit event from another event hub
 });
 ```
+#### targetOrigin:
+Specify a targetOrigin to be included as the required origin parameter in a window.postMessage command.
+#### originRegex:
+The originRegex option allows the hub to accept messages from multiple domains for multi-domain eventing.
+#### targetWindow (optional):
+Specify a targetWindow to configure the window to which you will send postMessages. This setting can be overridden by the emit function's 'window' argument. If no targetWindow is provided at postMessage time, no postMessage will be sent.
+#### hubId (optional):
+In order to disambiguate which hub sends which message, hubId, if present, will be tacked on to every outbound postMessage Object payload. A hubId can optionally be set via an '_init_' postMessage. 
+
 **evnt-hub** is implemented with best practices in mind regarding XSS exposure. For more information on window.postMessage and the security concerns associated
 with cross origin messaging, check out the [MDN documentation.](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)
-
-Further features are under consideration regarding the use of '**\***' to publish messages from all hosts.
 
 ## Development Setup
 ```bash
 npm install
 npm run dev
+# run a dev server at localhost:8100
 npm run dev:demo
 npm run build
 npm run test
