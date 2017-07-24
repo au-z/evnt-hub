@@ -9,7 +9,7 @@ export default (function(options) {
 	const version = '1.1.0';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
-	if(!options.originRegex) console.error('[EventHub] originRegex not provided.');
+	if(!options.originRegex) console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
 	const targetWindow = options.targetWindow || null;
 	let hubId = options.hubId || null;
 	let nextTickFn = function(){};
@@ -87,11 +87,13 @@ export default (function(options) {
 	});
 
 	/**
-	 * Returns true if the origin matches the regex
+	 * Returns true if the origin matches the regex or if there is no originRegex configured.
 	 * @param {String} origin the origin of the event
 	 * @return {Boolean}
 	 */
 	function isOriginValid(origin) {
+		if(!options.originRegex) return true;
+
 		let match = options.originRegex.exec(origin);
 		return !!(match);
 	}

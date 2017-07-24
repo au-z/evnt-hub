@@ -18,20 +18,22 @@ you will need to know the origin of the host.
 ```javascript
 let hub = new EventHub({
   targetOrigin: 'http://your.target-origin.here', // the origin you want to send to
-  originRegex: /^(https?):\/\/.*(my-domain)(\.com)$/, // a regex expression for all the accepted origins
-  targetWindow: window.parent, // the postMessage target window
-  hubId: -1, //can be optionally issued with '_init_' emit event from another event hub
+  originRegex: /^(https?):\/\/.*(my-domain)(\.com)$/,
+  targetWindow: window.parent, // the window to postMessage to
+  hubId: -1,
 });
 ```
 #### targetOrigin:
 Specify a targetOrigin to be included as the required origin parameter in a window.postMessage command.
-#### originRegex:
+#### originRegex (optional):
 The originRegex option allows the hub to accept messages from multiple domains for multi-domain eventing.
+If not present, the origin checker will not run. __WARNING:__ Dependening on your application, this may pose a security risk. See below for security considerations.
 #### targetWindow (optional):
 Specify a targetWindow to configure the window to which you will send postMessages. This setting can be overridden by the emit function's 'window' argument. If no targetWindow is provided at postMessage time, no postMessage will be sent.
 #### hubId (optional):
 In order to disambiguate which hub sends which message, hubId, if present, will be tacked on to every outbound postMessage Object payload. A hubId can optionally be set via an '_init_' postMessage. 
 
+## Security
 **evnt-hub** is implemented with best practices in mind regarding XSS exposure. For more information on window.postMessage and the security concerns associated
 with cross origin messaging, check out the [MDN documentation.](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)
 
