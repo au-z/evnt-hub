@@ -42,18 +42,6 @@ describe('Given a new instance of eventHub', () => {
 		expect(arg).to.be.equal('[EventHub] targetOrigin not provided.');
 		stub.restore();
 	});
-	it('requires a originRegex option', () => {
-		let stub = sinon.stub(console, 'error');
-		new EventHub({
-			targetOrigin: 'http://protolabs.com',
-			targetWindow: window.parent,
-			/* no origin regex option */
-		});
-		expect(stub.calledOnce).to.be.true;
-		const arg = stub.getCall(0).args[0];
-		expect(arg).to.be.equal('[EventHub] originRegex not provided.');
-		stub.restore();
-	});
 	it('assigns a hubId on _init_', () => {
 		let postMessageStub = sinon.stub(window.parent, 'postMessage');
 		let warnStub = sinon.stub(console, 'warn');
