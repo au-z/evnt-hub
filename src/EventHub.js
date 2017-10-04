@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Creates an event hub for pub/sub interactions and
  * window.postMessage communication for linking clients.
@@ -6,12 +5,13 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.1.0';
+	const version = '1.2.0';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
 	if(!options.originRegex) console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
 	const targetWindow = options.targetWindow || null;
 	let hubId = options.hubId || null;
+	const verbose = options.verbose || false;
 	let nextTickFn = function(){};
 
 	const hub = (function(q) {
@@ -28,6 +28,7 @@ export default (function(options) {
 			if(!events[event]) events[event] = [];
 			let token = (++subUid).toString();
 			events[event].push({token, func});
+			if(verbose) console.log(`Subscription to '${event}' added. Returning token: ${token}.`);
 			return token;
 		}
 
@@ -38,6 +39,7 @@ export default (function(options) {
 		 * @return {Boolean} if the publish was successfull
 		 */
 		function publish(event, payload) {
+			if(verbose) console.log(`Event ${event} published. Payload: `, payload);
 			if(!events[event]) return false;
 			setTimeout(() => {
 				let subscribers = events[event];
@@ -83,6 +85,7 @@ export default (function(options) {
 			return;
 		}
 		if(!event.data || !event.data._type || !event.data.payload) return;
+		if(verbose) console.log(`PostMessage event ${event.data._type} received from ${origin}. Publishing.`);
 		hub.publish(event.data._type, event.data.payload);
 	});
 
@@ -92,8 +95,9 @@ export default (function(options) {
 	 * @return {Boolean}
 	 */
 	function isOriginValid(origin) {
-		if(!options.originRegex) return true;
-
+		if(!options.originRegex) {
+			return true;
+		}
 		let match = options.originRegex.exec(origin);
 		return !!(match);
 	}
@@ -116,9 +120,10 @@ export default (function(options) {
 	 * @param {Object} window the window to postMessage to (fallback: options.targetWindow)
 	 */
 	function post(_type, payload = {}, window) {
-		const isObj = (typeof(payload) === Object);
+		const isObj = (typeof payload === Object);
 		// use the targetWindow as a fallback
 		window = window || targetWindow;
+		if(verbose) console.log(`Attempting to postMessage ${_type} to window ${window}. Payload: `, payload);
 		if(window) {
 			if(!hubId) console.warn('[EventHub] has no hubId.');
 			if(isObj) payload._hubId = hubId;
@@ -137,7 +142,14 @@ export default (function(options) {
 	}
 
 	return {
-		version,
+		about: () => ({
+			hubId,
+			originRegex: options.originRegex,
+			targetOrigin: options.targetOrigin,
+			targetWindow,
+			verbose,
+			version,
+		}),
 		emit,
 		nextTick,
 		isOriginValid,

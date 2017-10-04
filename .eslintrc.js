@@ -27,5 +27,6 @@ module.exports = {
 	rules: {
 		'max-len': ['error', 120],
 		'linebreak-style': 0,
+		'no-console': 0,
 	},
 };

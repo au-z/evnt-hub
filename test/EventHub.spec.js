@@ -1,4 +1,6 @@
-/* eslint-disable no-console */
+import fs from 'fs';
+import path from 'path';
+
 import chai from 'chai';
 import sinon from 'sinon';
 import jsdomGlobal from 'jsdom-global';
@@ -127,5 +129,10 @@ describe('Given a new instance of eventHub', () => {
 		hub.emit('blah', {payload: 'foo'}, fakeWindow);
 		expect(postMessageSpy.calledOnce).to.be.true;
 		targetWindowPostMessageSpy.restore();
+	});
+	it('returns the correct version number about()', () => {
+		const pckg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
+		let about = hub.about();
+		expect(about.version).to.be.equal(pckg.version);
 	});
 });

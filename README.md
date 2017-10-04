@@ -21,6 +21,7 @@ let hub = new EventHub({
   originRegex: /^(https?):\/\/.*(my-domain)(\.com)$/,
   targetWindow: window.parent, // the window to postMessage to
   hubId: -1,
+  verbose: true,
 });
 ```
 #### targetOrigin:
@@ -32,6 +33,8 @@ If not present, the origin checker will not run. __WARNING:__ Dependening on you
 Specify a targetWindow to configure the window to which you will send postMessages. This setting can be overridden by the emit function's 'window' argument. If no targetWindow is provided at postMessage time, no postMessage will be sent.
 #### hubId (optional):
 In order to disambiguate which hub sends which message, hubId, if present, will be tacked on to every outbound postMessage Object payload. A hubId can optionally be set via an '_init_' postMessage. 
+#### verbose (optional):
+If true, triggers console.logs on every subscribe, publish, emit, and postMessage receive. __Note:__ A single publish may trigger multiple event handler functions, however verbose logging will only log once.
 
 ## Security
 **evnt-hub** is implemented with best practices in mind regarding XSS exposure. For more information on window.postMessage and the security concerns associated
