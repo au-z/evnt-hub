@@ -32,19 +32,17 @@ describe('Given a new instance of eventHub', () => {
 		expect(warnSpy.notCalled).to.be.true;
 		warnSpy.restore();
 	});
-	it('requires a targetOrigin option', () => {
-		let stub = sinon.stub(console, 'error');
-		new EventHub({
-			/* no target origin option */
-			originRegex: /http:\/\/.*/i,
-			targetWindow: window.parent,
+	it('dynamically sets a targetOrigin', (done) => {
+		let warnStub = sinon.stub(console, 'warn');
+		let _hub = new EventHub({/* no targetOrigin option */ });
+		_hub.publish('_init_', {hubId: 0, targetOrigin: 'target-origin'});
+		_hub.nextTick(() => {
+			expect(_hub.about().targetOrigin).to.be.equal('target-origin');
+			warnStub.restore();
+			done();
 		});
-		expect(stub.calledOnce).to.be.true;
-		const arg = stub.getCall(0).args[0];
-		expect(arg).to.be.equal('[EventHub] targetOrigin not provided.');
-		stub.restore();
 	});
-	it('assigns a hubId on _init_', () => {
+	it('assigns a hubId on _init_', (done) => {
 		let postMessageStub = sinon.stub(window.parent, 'postMessage');
 		let warnStub = sinon.stub(console, 'warn');
 		hub.emit('foo', {bar: 'baz'});
@@ -55,48 +53,71 @@ describe('Given a new instance of eventHub', () => {
 			hub.emit('foo', {bar: 'baz2'});
 			expect(warnStub.notCalled).to.be.true;
 			warnStub.restore();
+			postMessageStub.restore();
+			done();
 		});
-		postMessageStub.restore();
+	});
+	it('assigns a hubId on _init_ where payload is an object', (done) => {
+		hub.publish('_init_', {hubId: 42});
+		hub.nextTick(() => {
+			expect(hub.about().hubId).to.be.equal('42');
+			done();
+		});
 	});
 	it('returns a token on subscribe', () => expect(hub.subscribe('foo')).to.be.equal('1'));
 	it('increments tokens', () => expect(hub.subscribe('foo')).to.be.equal('2'));
 	it('returns token on unsubscribe', () => expect(hub.unsubscribe('2')).to.be.equal('2'));
 	it('returns false if cannot unsubscribe', () => expect(hub.unsubscribe('3')).to.be.false);
-	it('calls func on publish', () => {
+	it('calls func on publish', (done) => {
 		let cb = sinon.spy();
 		hub.subscribe('foo', cb);
 		hub.publish('foo');
-		hub.nextTick(() => expect(cb.calledOnce).to.be.true);
+		hub.nextTick(() => {
+			expect(cb.calledOnce).to.be.true;
+			done();
+		});
 	});
-	it('passes data to subscription callback', () => {
-		let data = {bar: 'baz'};
-		let func = (type, payload) => payload;
-		let spy = sinon.spy(func);
+	it('passes data to subscription callback', (done) => {
+		const data = {bar: 'baz'};
+		let calledOnce = false;
+		let func = (type, payload) => {
+			calledOnce = true;
+			return payload;
+		};
 		hub.subscribe('foo', func);
 		hub.nextTick(() => {
-			expect(spy.calledOnce).to.be.true;
+			expect(calledOnce).to.be.true;
+			done();
 		});
 		hub.publish('foo', data);
 	});
-	it('does not call func if unsubscribed', () => {
-		let func = (type, payload) => payload;
-		let spy = sinon.spy(func);
+	it('does not call func if unsubscribed', (done) => {
+		let called = false;
+		let func = (type, payload) => {
+			called = true;
+			return payload;
+		};
 		let token = hub.subscribe('foo', func);
 		hub.publish('foo', {bar: 'baz'});
-		hub.unsubscribe(token);
-		hub.publish('foo', {bar: 'baz2'});
 		hub.nextTick(() => {
-			expect(spy.calledOnce).to.be.true;
+			called = !called;
+			hub.unsubscribe(token);
+			hub.publish('foo', {bar: 'baz2'});
+			hub.nextTick(() => {
+				expect(called).to.be.false;
+				done();
+			});
 		});
 	});
-	it('emits a publish and a postMessage', () => {
+	it('emits a publish and a postMessage', (done) => {
 		hub.subscribe('foo', (type, payload) => expect(type).to.be.equal('foo'));
 		let stub = sinon.stub(window.parent, 'postMessage');
 		hub.emit('foo', {bar: 'baz'});
 		hub.nextTick(() => {
 			expect(stub.calledOnce).to.be.true;
+			stub.restore();
+			done();
 		});
-		stub.restore();
 	});
 	it('listens for new messages', () => {
 		let stub = sinon.stub(window, 'addEventListener');
@@ -118,6 +139,7 @@ describe('Given a new instance of eventHub', () => {
 		expect(_hub.isOriginValid('http://protolabs.com')).to.be.true;
 		expect(_hub.isOriginValid('https://protolabs.com')).to.be.true;
 		expect(_hub.isOriginValid('http://protolabs.com/')).to.be.false;
+
 		expect(_hub.isOriginValid('https://proxy.protolabs.com')).to.be.true;
 	});
 	it('posts to window arg and uses options.targetWindow as fallback', () => {
@@ -129,6 +151,15 @@ describe('Given a new instance of eventHub', () => {
 		hub.emit('blah', {payload: 'foo'}, fakeWindow);
 		expect(postMessageSpy.calledOnce).to.be.true;
 		targetWindowPostMessageSpy.restore();
+	});
+	it('does not send postMessage if targetOrigin not set', () => {
+		let warnStub = sinon.stub(console, 'warn');
+		let _hub = new EventHub();
+		let fakeWindow = {postMessage: () => {/* do-nothing */}};
+		let targetWindowPostMessageSpy = sinon.spy(window.parent, 'postMessage');
+		_hub.emit('blah', {payload: 'foo'}, fakeWindow);
+		expect(targetWindowPostMessageSpy.notCalled).to.be.true;
+		warnStub.restore();
 	});
 	it('returns the correct version number about()', () => {
 		const pckg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));

@@ -1,3 +1,5 @@
+const isObj = (a) => (a === Object(a) && Object.prototype.toString.call(a) !== '[object Array]');
+
 /**
  * Creates an event hub for pub/sub interactions and
  * window.postMessage communication for linking clients.
@@ -5,13 +7,17 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.2.2';
+	const version = '1.3.0';
 	options = options || {};
-	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
-	if(!options.originRegex) console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
+	let targetOrigin = options.targetOrigin || null;
 	const targetWindow = options.targetWindow || null;
-	let hubId = options.hubId || null;
 	const verbose = options.verbose || false;
+	let hubId = options.hubId || null;
+	if(!targetOrigin && verbose) {
+		console.warn('[EventHub] Cannot postMessage without a targetOrigin. Please add it to \'_init_\' event payload.');
+	}
+	if(!options.originRegex) console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
+
 	let nextTickFn = function(){};
 
 	const hub = (function(q) {
@@ -74,8 +80,17 @@ export default (function(options) {
 		return {subscribe, publish, unsubscribe};
 	})();
 
-	hub.subscribe('_init_', (type, payload) => {
-		hubId = payload.toString();
+	hub.subscribe('_init_', (type, payload = {}) => {
+		if(!isObj(payload)) {
+			// legacy behavior
+			hubId = payload.toString();
+		} else {
+			hubId = payload.hubId.toString();
+			targetOrigin = (payload.targetOrigin) ? payload.targetOrigin : targetOrigin;
+			if(!targetOrigin) {
+				console.error('[EventHub] No target origin supplied. Cannot postMessage.');
+			}
+		}
 	});
 	window.addEventListener('message', function(event) {
 		let origin = event.origin || event.originalEvent.origin;
@@ -120,14 +135,13 @@ export default (function(options) {
 	 * @param {Object} window the window to postMessage to (fallback: options.targetWindow)
 	 */
 	function post(_type, payload = {}, window) {
-		const isObj = (typeof payload === Object);
 		// use the targetWindow as a fallback
 		window = window || targetWindow;
-		if(verbose) console.log(`Attempting to postMessage ${_type}. Payload: `, payload);
+		if(verbose) console.log(`Attempting to postMessage ${_type} to targetOrigin ${targetOrigin}. Payload: `, payload);
 		if(window) {
 			if(!hubId) console.warn('[EventHub] has no hubId.');
 			if(isObj) payload._hubId = hubId;
-			window.postMessage({_type, payload}, options.targetOrigin);
+			targetOrigin && window.postMessage({_type, payload}, targetOrigin);
 		} else {
 			console.error('[EventHub] cannot postMessage to falsy window.');
 		}
@@ -145,7 +159,7 @@ export default (function(options) {
 		about: () => ({
 			hubId,
 			originRegex: options.originRegex,
-			targetOrigin: options.targetOrigin,
+			targetOrigin,
 			targetWindow,
 			verbose,
 			version,
