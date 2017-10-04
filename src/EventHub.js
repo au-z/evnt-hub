@@ -5,7 +5,7 @@
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.2.0';
+	const version = '1.2.1';
 	options = options || {};
 	if(!options.targetOrigin) console.error('[EventHub] targetOrigin not provided.');
 	if(!options.originRegex) console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
@@ -123,7 +123,7 @@ export default (function(options) {
 		const isObj = (typeof payload === Object);
 		// use the targetWindow as a fallback
 		window = window || targetWindow;
-		if(verbose) console.log(`Attempting to postMessage ${_type} to window ${window}. Payload: `, payload);
+		if(verbose) console.log(`Attempting to postMessage ${_type}. Payload: `, payload);
 		if(window) {
 			if(!hubId) console.warn('[EventHub] has no hubId.');
 			if(isObj) payload._hubId = hubId;
