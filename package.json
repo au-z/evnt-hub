@@ -1,6 +1,6 @@
 {
   "name": "evnt-hub",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Event subscription library with window.postMessage support.",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "dev": "webpack --progress --colors --watch --env dev",
     "dev:demo": "concurrent \"npm run dev\" \"node server.js\"",
     "test": "mocha --compilers js:babel-core/register --colors ./test/*.spec.js",
-    "test:watch": "mocha --compilers js:babel-core/register --colors -w ./test/*.spec.js"
+    "test:watch": "mocha --compilers js:babel-core/register --colors -w ./test/*.spec.js",
+    "prepublish": "concurrent \"webpack --env build\" \"webpack --env dev\" \"npm run test\""
   },
   "repository": {
     "type": "git",
