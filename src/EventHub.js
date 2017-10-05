@@ -7,7 +7,7 @@ const isObj = (a) => (a === Object(a) && Object.prototype.toString.call(a) !== '
  * @return {Object} the public API of the EventHub library
  */
 export default (function(options) {
-	const version = '1.3.0';
+	const version = '1.3.1';
 	options = options || {};
 	let targetOrigin = options.targetOrigin || null;
 	const targetWindow = options.targetWindow || null;
@@ -165,8 +165,9 @@ export default (function(options) {
 			version,
 		}),
 		emit,
-		nextTick,
 		isOriginValid,
+		nextTick,
+		post,
 		publish: hub.publish,
 		subscribe: hub.subscribe,
 		unsubscribe: hub.unsubscribe,

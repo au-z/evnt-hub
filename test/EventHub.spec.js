@@ -166,4 +166,5 @@ describe('Given a new instance of eventHub', () => {
 		let about = hub.about();
 		expect(about.version).to.be.equal(pckg.version);
 	});
+	it('exposes a post function', () => expect(hub.post).to.not.be.null);
 });
