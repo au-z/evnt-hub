@@ -9,14 +9,13 @@ module.exports = {
 		node: true
 	},
 	globals: {
-		window: true,
 		describe: true,
-		before: true,
+		jest: true,
+		beforeAll: true,
 		beforeEach: true,
 		afterEach: true,
 		it: true,
 		expect: true,
-		sinon: true,
 	},
 	parser: 'babel-eslint',
 	parserOptions: {

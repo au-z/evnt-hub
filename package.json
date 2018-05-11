@@ -1,14 +1,14 @@
 {
   "name": "evnt-hub",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Event subscription library with window.postMessage support.",
   "main": "index.js",
   "scripts": {
     "build": "webpack --env build",
     "dev": "webpack --progress --colors --watch --env dev",
     "dev:demo": "concurrently \"npm run dev\" \"node server.js\"",
-    "test": "mocha --compilers js:babel-core/register --colors ./test/*.spec.js",
-    "test:watch": "mocha --compilers js:babel-core/register --colors -w ./test/*.spec.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "prepublish": "concurrently \"webpack --env build\" \"webpack --env dev\" \"npm run test\""
   },
   "repository": {
@@ -44,6 +44,7 @@
     "eslint-config-auz": "^1.0.0",
     "eslint-loader": "^1.7.1",
     "express": "^4.15.2",
+    "jest": "^22.4.3",
     "jsdom": "^9.12.0",
     "jsdom-global": "^2.1.1",
     "mocha": "^3.2.0",
