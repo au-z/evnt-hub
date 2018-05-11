@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 import EventHub from '../src/EventHub.js';
 
 let hub;
@@ -160,11 +157,6 @@ describe('Given a new instance of eventHub', () => {
 		let fakeWindow = {postMessage: () => {/* do-nothing */}};
 		_hub.emit('blah', {payload: 'foo'}, fakeWindow);
 		expect(mockTargetPostMessage.mock.calls.length).toBe(0);
-	});
-	it('returns the correct version number about()', () => {
-		const pckg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
-		let about = hub.about();
-		expect(about.version).toBe(pckg.version);
 	});
 	it('exposes a post function', () => {
 		expect(hub.post).not.toBeNull;
