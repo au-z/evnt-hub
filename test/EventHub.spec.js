@@ -1,4 +1,5 @@
 import EventHub from '../src/EventHub.js';
+window.localStorage = window.localStorage || {};
 
 let hub;
 

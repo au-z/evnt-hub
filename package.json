@@ -1,6 +1,6 @@
 {
   "name": "evnt-hub",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Event subscription library with window.postMessage support.",
   "main": "index.js",
   "scripts": {
@@ -52,5 +52,8 @@
     "sinon": "^2.1.0",
     "webpack": "^2.4.1",
     "yargs": "^7.1.0"
+  },
+  "jest": {
+    "testURL": "http://localhost"
   }
 }

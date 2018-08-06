@@ -85,7 +85,7 @@ export default (function(options) {
 		DEBUG && console.log(`Attempting to postMessage ${_type} to targetOrigin ${targetOrigin}. Payload: `, payload);
 		if(window) {
 			if(!hubId) console.warn('[EventHub] has no hubId.');
-			if(isObj) payload._hubId = hubId;
+			if(isObj(payload)) payload._hubId = hubId;
 			targetOrigin && window.postMessage({_type, payload}, targetOrigin);
 		} else {
 			console.error('[EventHub] cannot postMessage to falsy window.');
