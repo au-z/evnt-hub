@@ -1,8 +1,4 @@
 module.exports = {
-	ecmaFeatures: {
-		globalReturn: true,
-		modules: true,
-	},
 	env: {
 		browser: true,
 		es6: true,
@@ -16,7 +12,7 @@ module.exports = {
 		afterEach: true,
 		it: true,
 		expect: true,
-		sinon: true,
+		jest: true,
 	},
 	parser: 'babel-eslint',
 	parserOptions: {

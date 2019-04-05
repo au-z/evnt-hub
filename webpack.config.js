@@ -1,5 +1,3 @@
-const webpack = require('webpack');
-const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const path = require('path');
 const env = require('yargs').argv.env;
 const libraryName = 'EventHub';
@@ -7,13 +5,12 @@ let outputFile;
 let plugins = [];
 
 if(env === 'build') {
-	plugins.push(new UglifyJsPlugin({minimize: true}));
 	outputFile = libraryName + '.min.js';
 } else {
 	outputFile = libraryName + '.js';
 }
 
-let config = {
+module.exports = {
 	entry: __dirname + '/src/EventHub.js',
 	devtool: 'source-map',
 	output: {
@@ -37,6 +34,9 @@ let config = {
 			},
 		],
 	},
+	optimization: {
+		minimize: (env === 'build'),
+	},
 	resolve: {
 		modules: [
 			path.resolve(__dirname, 'src'),
@@ -46,5 +46,3 @@ let config = {
 	},
 	plugins: plugins,
 };
-
-module.exports = config;

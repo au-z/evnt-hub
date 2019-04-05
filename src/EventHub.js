@@ -6,12 +6,11 @@ const isObj = (a) => (a === Object(a) && Object.prototype.toString.call(a) !== '
  * @param {Object} options configuration options for the hub
  * @return {Object} the public API of the EventHub library
  */
-export default (function(options) {
-	const version = '1.3.1';
-	options = options || {};
-	let targetOrigin = options.targetOrigin || null;
+export default (function(options = {}) {
+	const version = '2.0.0';
 	const targetWindow = options.targetWindow || null;
 	const verbose = options.verbose || false;
+	let targetOrigin = options.targetOrigin || null;
 	let hubId = options.hubId || null;
 	if(!targetOrigin && verbose) {
 		console.warn('[EventHub] Cannot postMessage without a targetOrigin. Please add it to \'_init_\' event payload.');
@@ -81,15 +80,10 @@ export default (function(options) {
 	})();
 
 	hub.subscribe('_init_', (type, payload = {}) => {
-		if(!isObj(payload)) {
-			// legacy behavior
-			hubId = payload.toString();
-		} else {
-			hubId = payload.hubId.toString();
-			targetOrigin = (payload.targetOrigin) ? payload.targetOrigin : targetOrigin;
-			if(!targetOrigin) {
-				console.error('[EventHub] No target origin supplied. Cannot postMessage.');
-			}
+		hubId = payload.hubId.toString();
+		targetOrigin = (payload.targetOrigin) ? payload.targetOrigin : targetOrigin;
+		if(!targetOrigin) {
+			console.error('[EventHub] No target origin supplied. Cannot postMessage.');
 		}
 	});
 	window.addEventListener('message', function(event) {
