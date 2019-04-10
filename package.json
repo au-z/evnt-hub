@@ -4,8 +4,8 @@
   "description": "Event subscription library with window.postMessage support.",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --mode=production",
-    "dev": "webpack --mode=development --progress --colors --watch",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --progress --colors --watch",
     "dev:demo": "concurrently \"npm run dev\" \"node server.js\"",
     "test": "jest",
     "test:watch": "jest --watch",
