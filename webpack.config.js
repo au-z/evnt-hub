@@ -1,48 +1,32 @@
 const path = require('path');
-const env = require('yargs').argv.env;
+const mode = require('yargs').argv.mode;
 const libraryName = 'EventHub';
-let outputFile;
-let plugins = [];
 
-if(env === 'build') {
-	outputFile = libraryName + '.min.js';
-} else {
-	outputFile = libraryName + '.js';
-}
+const load = (regex, loader) => ({
+	test: regex,
+	loader,
+	exclude: /node_modules/,
+});
 
 module.exports = {
-	entry: __dirname + '/src/EventHub.js',
+	entry: path.resolve(__dirname, 'src/EventHub.ts'),
 	devtool: 'source-map',
 	output: {
-		path: __dirname + '/lib',
-		filename: outputFile,
+		path: path.resolve(__dirname, 'lib'),
+		filename: libraryName + ((mode === 'production') ? '.min.js' : '.js'),
 		library: libraryName,
 		libraryTarget: 'umd',
+		libraryExport: 'default',
 		umdNamedDefine: true,
 	},
 	module: {
 		rules: [
-			{
-				test: /\.js$/,
-				loader: 'babel-loader',
-				exclude: /node_modules/,
-			},
-			{
-				test: /\.js$/,
-				loader: 'eslint-loader',
-				exclude: /node_modules/,
-			},
+			load(/\.js$/, 'babel-loader'),
+			load(/\.js$/, 'eslint-loader'),
+			load(/\.tsx?$/, 'ts-loader'),
 		],
 	},
 	optimization: {
-		minimize: (env === 'build'),
+		minimize: (mode === 'production'),
 	},
-	resolve: {
-		modules: [
-			path.resolve(__dirname, 'src'),
-			'node_modules',
-		],
-		extensions: ['.json', '.js'],
-	},
-	plugins: plugins,
 };

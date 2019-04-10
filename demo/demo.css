@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css?family=Barlow:100');
+
+html,
+body {
+	background: #282828;
+	color: #aaa;
+	font-family: 'Barlow', sans-serif;
+}
+
+body {
+	padding: 16px;
+}
+
+.input-label {
+	position: relative;
+	display: inline-block;
+}
+
+.input-label::before {
+	position: absolute;
+	left: 16px;
+	top: 0.9em;
+	content: attr(data-label);
+	font-weight: bold;
+	text-transform: uppercase;
+	font-family: 'Consolas', monospace;
+}
+
+.input-label>input {
+	position: relative;
+	border: none;
+	height: 2em;
+	border-radius: 8px;
+	border-left: 90px solid rgba(255, 255, 255, 0.06);
+	line-height: 2em;
+	background: rgba(255, 255, 255, 0.05);
+	padding-left: 8px;
+	margin: 8px 4px;
+	color: #aaa;
+}
+
+input.payload {
+	width: 500px;
+}
+
+button {
+	height: 2.4em;
+	border: 0;
+	padding: 8px 16px;
+	border-radius: 0px;
+	background: rgba(255, 255, 255, 0.1);
+	color: #aaa;
+}
+
+div>input::before {
+	position: absolute;
+	left: 0;
+	top: 4px;
+	content: 'Hello';
+}
+
+.subscriptions,
+.events {
+	padding: 16px;
+	border-radius: 8px;
+	display: flex;
+	border: 2px solid rgba(255, 255, 255, 0.03);
+}
+
+.subscription {
+	background: rgba(255, 255, 255, 0.04);
+	padding: 8px;
+	margin: 0 8px 0 0;
+	display: flex;
+	justify-content: space-between;
+}
+
+.subscription>div {
+	margin-left: 16px;
+}
+
+.subscription>div>i {
+	color: #D6515E;
+}
+
+.events {
+	flex-direction: column;
+}
+
+.events>div {
+	height: 2em;
+}
+
+.events em {
+	background: red;
+	padding: 2px 8px;
+	border-radius: 4px;
+	background: rgba(255, 255, 255, 0.1);
+	margin-right: 8px;
+}
+
+.events span {
+	color: #ddd;
+	margin: 8px;
+}
+
+.events span+span {
+	color: #84F9D6;
+}

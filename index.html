@@ -4,22 +4,17 @@
 		<title>Event Hub Demo</title>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" type="text/css" href="https://meyerweb.com/eric/tools/css/reset/reset.css">
+		<link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+		<link rel="stylesheet" type="text/css" href="/demo/demo.css">
+
+		<script src="https://unpkg.com/moment@2.24.0/moment.js"></script>
+		<script src="/node_modules/vue/dist/vue.js"></script>
+		<script src="/lib/EventHub.js"></script>
 		<script src="/lib/EventHub.js"></script>
 	</head>
 	<body>
-		<h2>Event Hub Demo</h2>
-		<button onclick="post()">Post _init_</button>
-		<div id="hub-output"></div>
-		<script>
-			hub = EventHub({targetOrigin: 'http://localhost:8080'});
-			function post() {
-				window.postMessage({_type: '_init_', payload: '0'}, 'http://localhost:8080');
-			}
-
-			let output = document.getElementById('hub-output');
-			hub.subscribe('_init_', function(type, payload) {
-				output.innerHTML += '<p>payload: ' + payload + '</p>';
-			});
-		</script>
+		<div id="demo"></div>
+		<script src="/demo/demo.js"></script>
 	</body>
 </html>

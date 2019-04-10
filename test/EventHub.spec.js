@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import EventHub from '../src/EventHub.js';
+import EventHub from '../src/EventHub.ts';
 
 describe('Given a new instance of eventHub', () => {
 	let hub;
