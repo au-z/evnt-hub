@@ -26,6 +26,9 @@ module.exports = {
 			load(/\.tsx?$/, 'ts-loader'),
 		],
 	},
+	resolve: {
+		extensions: ['.js', '.ts', '.json'],
+	},
 	optimization: {
 		minimize: (mode === 'production'),
 	},

@@ -1,13 +1,12 @@
-import fs from 'fs';
-import path from 'path';
 import EventHub from '../src/EventHub.ts';
+import {tsTypeLiteral} from '@babel/types';
 
 describe('Given a new instance of eventHub', () => {
 	let hub;
 	beforeEach(() => {
 		hub = new EventHub({
-			targetOrigin: 'http://localhost:8000',
-			originRegex: /http:\/\/.*/i,
+			targetOrigin: window.location.origin,
+			originRegex: /.*/i,
 			targetWindow: window.parent,
 		});
 	});
@@ -97,6 +96,66 @@ describe('Given a new instance of eventHub', () => {
 		});
 	});
 
+	describe('when posting or emitting window.postMessages', () => {
+		it('splits postMessage data into type, payload, and correlationId', (done) => {
+			expect(hub.about().targetOrigin).toBe(window.location.origin);
+			hub.subscribe('postMessage', (type, payload, meta) => {
+				expect(type).toBe('postMessage');
+				expect(payload).toMatchObject({foo: 'bar'});
+				expect(meta).toMatchObject({correlationId: '424242', correlates: true});
+				done();
+			}, '424242');
+			hub.post('postMessage', {foo: 'bar'}, window, '424242');
+		});
+
+		it('posts to window arg and uses options.targetWindow as fallback', () => {
+			let fakeWindow = {postMessage: jest.fn()};
+			window.parent.postMessage = jest.fn();
+			hub.emit('blah', {payload: 'foo'});
+			expect(window.parent.postMessage.mock.calls.length).toBe(1);
+			hub.emit('blah', {payload: 'foo'}, fakeWindow);
+			expect(fakeWindow.postMessage.mock.calls.length).toBe(1);
+			window.parent.postMessage.mockRestore();
+		});
+
+		it('does not send postMessage if targetOrigin not set', () => {
+			console.warn = jest.fn();
+			const hub = new EventHub();
+			let fakeWindow = {postMessage: () => {}};
+			window.parent.postMessage = jest.fn();
+			hub.emit('blah', {payload: 'foo'}, fakeWindow);
+			expect(window.parent.postMessage.mock.calls.length).toBe(0);
+			console.warn.mockRestore();
+		});
+	});
+
+	describe('when using a correlationId', () => {
+		it('can publish a payload with a correlationId', (done) => {
+			hub.subscribe('test.message', (event, payload, meta) => {
+				expect(meta.correlationId).toBe('test_id_please_ignore');
+				expect(meta.correlates).toBe(false);
+				done();
+			});
+			hub.publish('test.message', {foo: 'bar'}, 'test_id_please_ignore');
+		});
+
+		it('can test the correlationId matches within the hub publish', (done) => {
+			hub.subscribe('foo', (event, payload, meta) => {
+				expect(meta.correlationId).toBe('test_id_please_ignore');
+				expect(meta.correlates).toBe(true);
+				done();
+			}, 'test_id_please_ignore');
+			hub.publish('foo', {foo: 'bar'}, 'test_id_please_ignore');
+		});
+
+		it('can post a message with a correlationId to the targetWindow', () => {
+			window.parent.postMessage = jest.fn();
+			hub.emit('blah', {foo: 'bar'}, null, 'abc');
+			expect(window.parent.postMessage.mock.calls[0][0]._meta.correlationId).toBe('abc');
+			window.parent.postMessage.mockRestore();
+		});
+	});
+
 	it('emits a publish and a postMessage', (done) => {
 		hub.subscribe('foo', (type, payload) => expect(type).toBe('foo'));
 		window.parent.postMessage = jest.fn();
@@ -105,6 +164,71 @@ describe('Given a new instance of eventHub', () => {
 			expect(window.parent.postMessage.mock.calls.length).toBe(1);
 			window.parent.postMessage.mockRestore();
 			done();
+		});
+	});
+
+	describe('when using subscribeOnce', () => {
+		it('throws if no correlation is provided or an empty string', () => {
+			expect(() => hub.subscribeOnce('message', () => {}, '')).toThrow();
+			expect(() => hub.subscribeOnce('message', () => {}, null)).toThrow();
+			expect(() => hub.subscribeOnce('message', () => {}, undefined)).toThrow();
+		});
+
+		it('returns the subscription token', () => {
+			expect(hub.subscribeOnce('message', () => {}, 'abc')).toBe('1');
+		});
+
+		it('invokes func only when the correlationId matches', (done) => {
+			const handler = jest.fn();
+			hub.subscribeOnce('message', handler, 'abc');
+			hub.publish('message', {a: 'b'}, 'NO_CORRELATE');
+			hub.nextTick(() => {
+				expect(handler.mock.calls.length).toBe(0);
+				hub.publish('message', {a: 'b'}, 'abc');
+				hub.nextTick(() => {
+					expect(handler.mock.calls[0][2]).toMatchObject({correlationId: 'abc', correlates: true});
+					done();
+				});
+			});
+		});
+
+		it('stays subscribed if the correlationId does not match', (done) => {
+			let token = hub.subscribeOnce('message', () => {}, 'abc');
+			hub.publish('message', {foo: 'bar'}, 'NO_CORRELATE');
+			hub.nextTick(() => {
+				expect(hub.unsubscribe(token)).toBe('1');
+				done();
+			});
+		});
+
+		it('unsubscribes when the correlationId matches', (done) => {
+			let token = hub.subscribeOnce('message', () => {}, 'abc');
+			hub.publish('message', {foo: 'bar'}, 'abc');
+			hub.nextTick(() => {
+				expect(hub.unsubscribe(token)).toBe(false);
+				done();
+			});
+		});
+	});
+
+	describe('when creating a hub request', () => {
+		it('request resolves when the response message is received', (done) => {
+			hub.request('request', 'response', {}).then((payload) => {
+				expect(payload.value.foo).toBe('bar');
+				expect(payload._meta).toMatchObject({correlates: false});
+				done();
+			});
+			hub.publish('response', {foo: 'bar'});
+		});
+
+		it('requestOnce resolves only when the response is received and correlationId matches', (done) => {
+			hub.requestOnce('request', 'response', null, 'abc').then((payload) => {
+				expect(payload.value).toBe('correct');
+				expect(payload._meta).toMatchObject({correlationId: 'abc', correlates: true});
+				done();
+			});
+			hub.publish('response', 'incorrect', '123');
+			hub.publish('response', 'correct', 'abc');
 		});
 	});
 
@@ -132,31 +256,7 @@ describe('Given a new instance of eventHub', () => {
 		expect(hub.isOriginValid('https://proxy.protolabs.com')).toBe(true);
 	});
 
-	it('posts to window arg and uses options.targetWindow as fallback', () => {
-		let fakeWindow = {postMessage: jest.fn()};
-		window.parent.postMessage = jest.fn();
-		hub.emit('blah', {payload: 'foo'});
-		expect(window.parent.postMessage.mock.calls.length).toBe(1);
-		hub.emit('blah', {payload: 'foo'}, fakeWindow);
-		expect(fakeWindow.postMessage.mock.calls.length).toBe(1);
-		window.parent.postMessage.mockRestore();
-	});
-
-	it('does not send postMessage if targetOrigin not set', () => {
-		console.warn = jest.fn();
-		const hub = new EventHub();
-		let fakeWindow = {postMessage: () => {/* do-nothing */}};
-		window.parent.postMessage = jest.fn();
-		hub.emit('blah', {payload: 'foo'}, fakeWindow);
-		expect(window.parent.postMessage.mock.calls.length).toBe(0);
-		console.warn.mockRestore();
-	});
-
-	it('returns the correct version number about()', () => {
-		const pckg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json')));
-		let about = hub.about();
-		expect(about.version).toBe(pckg.version);
-	});
-
 	it('exposes a post function', () => expect(hub.post).toBeDefined());
+
+	afterEach(() => jest.restoreAllMocks());
 });

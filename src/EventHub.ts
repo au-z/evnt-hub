@@ -1,16 +1,12 @@
-const isObj = (a: any) => (a === Object(a) && Object.prototype.toString.call(a) !== '[object Array]');
+import packageJson from '../package.json';
+import Hub from './Hub';
 
 interface HubOptions {
-	targetWindow?: string
+	targetWindow?: Window
 	targetOrigin?: string
 	originRegex?: RegExp
 	hubId?: string
 	verbose: boolean
-}
-
-interface Subscription {
-	token: string
-	func: Function
 }
 
 /**
@@ -32,88 +28,13 @@ export default (function(options: HubOptions = {verbose: false}) {
 		console.warn('[EventHub] No originRegex provided. Incoming messages will not be checked.');
 	}
 
-	let nextTickFn: Function = function(){};
-
-	const hub = (function() {
-		let eventMap: {[index: string] : Subscription[]} = {};
-		let subUid = -1;
-
-		/**
-		 * Subscribe to an event in the hub
-		 * @param {String} event the event being listened for
-		 * @param {Function} func the function to execute on publish
-		 * @return {String} a token identifying the subscription
-		 */
-		function subscribe(event: string, func: Function = function(){}) {
-			if(!eventMap[event]) eventMap[event] = [];
-			let token = (++subUid).toString();
-			eventMap[event].push({token, func});
-			VERBOSE && console.log(`Subscription to '${event}' added. Returning token: ${token}.`);
-			return token;
-		}
-
-		/**
-		 * Publishes an event to the hub
-		 * @param {String} event the event being published
-		 * @param {String} payload any data associated with the event
-		 * @return {Boolean} if the publish was successfull
-		 */
-		function publish(event: string, payload: any) {
-			VERBOSE && console.log(`Event ${event} published. Payload: `, payload);
-			if(!eventMap[event]) return false;
-			setTimeout(() => {
-				const subscribers = eventMap[event];
-				let idx = subscribers.length;
-				while(idx--) {
-					subscribers[idx].func(event, payload);
-				}
-				nextTickFn();
-			}, 0);
-			return true;
-		}
-
-		/**
-		 * Unsubscribes from eventMap published to the hub with the matching token
-		 * @param {String} token the subscription identifier issued on subscribe
-		 * @return {Number} the token if successful else false
-		 */
-		function unsubscribe(token: string) {
-			let found = false;
-			Object.values(eventMap).forEach((subscriptions) => {
-				const idx = subscriptions.findIndex((s) => s.token === token)
-				if(idx > -1) {
-					subscriptions.splice(idx, 1);
-					found = true;
-				}
-			})
-			return found ? token : false;
-		}
-
-		return {
-			subscribe,
-			publish,
-			unsubscribe
-		};
-	})();
-
-	hub.subscribe('_init_', (type: string, payload: any = {}) => {
+	const hub = Hub(VERBOSE);
+	hub.subscribe('_init_', (type: string, payload: any = {}, meta: object) => {
 		hubId = payload.hubId.toString();
 		targetOrigin = (payload.targetOrigin) ? payload.targetOrigin : targetOrigin;
 		if(!targetOrigin) {
 			console.error('[EventHub] No target origin supplied. Cannot postMessage.');
 		}
-	});
-
-	window.addEventListener('message', (event) => {
-		let origin = event.origin || (event as any).originalEvent.origin;
-		let ok = isOriginValid(origin);
-		if(!ok) {
-			console.warn('[EventHub] message received from unknown origin. Ignoring.');
-			return;
-		}
-		if(!event.data || !event.data._type || !event.data.payload) return;
-		VERBOSE && console.log(`PostMessage event ${event.data._type} received from ${origin}. Publishing.`);
-		hub.publish(event.data._type, event.data.payload);
 	});
 
 	/**
@@ -129,14 +50,23 @@ export default (function(options: HubOptions = {verbose: false}) {
 	}
 
 	/**
-	 * Publishes the event and sends a window.postMessage to the targetOrigin
-	 * @param {string} type the event name and type of postMessage
-	 * @param {any} payload the event and postMessage payload
-	 * @param {Window} window the window to postMessage to
+	 * A regular subscription that only resolves if a matching correlationId is published.
+	 * The subscription is then cancelled.
+	 * @param type the subscription name
+	 * @param func the function to invoke
+	 * @param correlationId a unique token to correlate sent and received events
 	 */
-	function emit(type: string, payload: any = {}, window: Window) {
-		hub.publish(type, payload);
-		post(type, payload, window);
+	function subscribeOnce(type: string, func: Function, correlationId: string) {
+		if(correlationId == null || correlationId === '') {
+			throw new Error('[EventHub] cannot subscribeOnce if no correlationId is provided')
+		}
+		let sub = hub.subscribe(type, (type: string, payload: any, meta: any) => {
+			if(meta.correlates) {
+				hub.unsubscribe(sub);
+				func(type, payload, meta);
+			}
+		}, correlationId);
+		return sub;
 	}
 
 	/**
@@ -144,27 +74,78 @@ export default (function(options: HubOptions = {verbose: false}) {
 	 * @param {string} type the type of postMessage
 	 * @param {any} payload the postMessage payload
 	 * @param {Window} window the window to postMessage to (fallback: options.targetWindow)
+	 * @param {String} correlationId a unique token to correlate sent and received events
 	 */
-	function post(type: string, payload: any = {}, window: Window) {
+	function post(type: string, payload: any = {}, window: Window | null, correlationId: string) {
 		// use the targetWindow as a fallback
 		window = window || targetWindow;
-		VERBOSE && console.log(`Attempting to postMessage ${type} to targetOrigin ${targetOrigin}. Payload: `, payload);
+		VERBOSE && console.log(`Attempting to postMessage '${type}' to targetOrigin ${targetOrigin}. Payload: `, payload);
 		if(window) {
 			if(!hubId) console.warn('[EventHub] has no hubId.');
-			if(isObj) payload._hubId = hubId;
-			targetOrigin && window.postMessage({type, payload}, targetOrigin);
+			targetOrigin && window.postMessage({type, payload, _meta: {
+				hubId,
+				correlationId,
+				version: packageJson.version,
+			}}, targetOrigin);
 		} else {
 			console.error('[EventHub] cannot postMessage to falsy window.');
 		}
 	}
 
 	/**
-	 * Registers a function to be run after all subscription funcs are called
-	 * @param {Function} cb the callback function to execute
+	 * Publishes the event to the local hub AND sends a window.postMessage to the targetOrigin
+	 * @param {string} type the event name and type of postMessage
+	 * @param {any} payload the event and postMessage payload
+	 * @param {Window} window the window to postMessage to
+	 * @param {String} correlationId a unique token to correlate sent and received events
 	 */
-	function nextTick(cb: Function) {
-		nextTickFn = cb;
+	function emit(type: string, payload: any = {}, window: Window | null, correlationId: string) {
+		hub.publish(type, payload, correlationId);
+		post(type, payload, window, correlationId);
 	}
+
+	/**
+	 * Returns a promise that resolves whenever the supplied event is received in response.
+	 * @param reqEvent the event to request
+	 * @param resEvent the event to resolve from
+	 * @param reqBody the request event payload
+	 * @param correlationId a unique token to correlate sent and received events
+	 */
+	function request(reqEvent: string, resEvent: string, reqBody: any = {}, correlationId: string) : Promise<any> {
+		var requesting = new Promise((res, rej) => hub.subscribe(resEvent, (e: any, payload: any, _meta: any) => {
+			res({value: payload, _meta});
+		}, correlationId));
+		emit(reqEvent, reqBody, null, correlationId);
+		return requesting;
+	}
+
+	/**
+	 * Returns a promise that resolves once if and only if a response event with matching correlationId is received.
+	 * @param reqEvent the event to request
+	 * @param resEvent the event to resolve from
+	 * @param reqBody the request event payload
+	 * @param correlationId a unique token to correlate sent and received events
+	 */
+	function requestOnce(reqEvent: string, resEvent: string, reqBody: any = {}, correlationId: string) : Promise<any> {
+		var requesting = new Promise((res, rej) => subscribeOnce(resEvent, (e: any, payload: any, _meta: any) => {
+			res({value: payload, _meta});
+		}, correlationId));
+		// postMessage AND publish to stay handler origin agnostic
+		emit(reqEvent, reqBody, null, correlationId);
+		return requesting;
+	}
+
+	window.addEventListener('message', (event) => {
+		let origin = event.origin || ((event as any).originalEvent && (event as any).originalEvent.origin);
+		let ok = isOriginValid(origin);
+		if(!ok) {
+			console.warn('[EventHub] message received from unknown origin. Ignoring.');
+			return;
+		}
+		if(!event.data || !event.data.type || !event.data.payload) return;
+		VERBOSE && console.log(`PostMessage event '${event.data._type}' received from ${origin}. Publishing.`);
+		hub.publish(event.data.type, event.data.payload, (event.data._meta) ? event.data._meta.correlationId : null);
+	});
 
 	return {
 		about: () => ({
@@ -173,14 +154,17 @@ export default (function(options: HubOptions = {verbose: false}) {
 			targetOrigin,
 			targetWindow,
 			verbose: VERBOSE,
-			version: '2.0.0',
+			version: packageJson.version,
 		}),
-		emit,
-		post,
+		nextTick: hub.nextTick,
 		publish: hub.publish,
 		subscribe: hub.subscribe,
+		subscribeOnce,
 		unsubscribe: hub.unsubscribe,
 		isOriginValid,
-		nextTick,
+		post,
+		emit,
+		request,
+		requestOnce,
 	};
 });
