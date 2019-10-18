@@ -1,5 +1,4 @@
 import EventHub from '../src/EventHub.ts';
-import {tsTypeLiteral} from '@babel/types';
 
 describe('Given a new instance of eventHub', () => {
 	let hub;

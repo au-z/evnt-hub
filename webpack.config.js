@@ -21,9 +21,8 @@ module.exports = {
 	},
 	module: {
 		rules: [
-			load(/\.js$/, 'babel-loader'),
+			load(/\.(j|t)s$/, 'babel-loader'),
 			load(/\.js$/, 'eslint-loader'),
-			load(/\.tsx?$/, 'ts-loader'),
 		],
 	},
 	resolve: {
