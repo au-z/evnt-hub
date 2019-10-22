@@ -111,11 +111,11 @@ export default (function(options: HubOptions = {verbose: false}) {
 	 * @param reqBody the request event payload
 	 * @param correlationId a unique token to correlate sent and received events
 	 */
-	function request(reqEvent: string, resEvent: string, reqBody: any = {}, correlationId: string) : Promise<any> {
+	function request(reqEvent: string, resEvent: string, reqBody: any = {}, window: Window | null, correlationId: string) : Promise<any> {
 		var requesting = new Promise((res, rej) => hub.subscribe(resEvent, (e: any, payload: any, _meta: any) => {
 			res({value: payload, _meta});
 		}, correlationId));
-		emit(reqEvent, reqBody, null, correlationId);
+		emit(reqEvent, reqBody, window, correlationId);
 		return requesting;
 	}
 
@@ -126,12 +126,12 @@ export default (function(options: HubOptions = {verbose: false}) {
 	 * @param reqBody the request event payload
 	 * @param correlationId a unique token to correlate sent and received events
 	 */
-	function requestOnce(reqEvent: string, resEvent: string, reqBody: any = {}, correlationId: string) : Promise<any> {
+	function requestOnce(reqEvent: string, resEvent: string, reqBody: any = {}, window: Window | null, correlationId: string) : Promise<any> {
 		var requesting = new Promise((res, rej) => subscribeOnce(resEvent, (e: any, payload: any, _meta: any) => {
 			res({value: payload, _meta});
 		}, correlationId));
 		// postMessage AND publish to stay handler origin agnostic
-		emit(reqEvent, reqBody, null, correlationId);
+		emit(reqEvent, reqBody, window, correlationId);
 		return requesting;
 	}
 

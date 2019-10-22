@@ -221,7 +221,7 @@ describe('Given a new instance of eventHub', () => {
 		});
 
 		it('requestOnce resolves only when the response is received and correlationId matches', (done) => {
-			hub.requestOnce('request', 'response', null, 'abc').then((payload) => {
+			hub.requestOnce('request', 'response', null, window, 'abc').then((payload) => {
 				expect(payload.value).toBe('correct');
 				expect(payload._meta).toMatchObject({correlationId: 'abc', correlates: true});
 				done();
