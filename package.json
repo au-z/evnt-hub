@@ -47,13 +47,13 @@
     "cross-env": "^4.0.0",
     "eslint": "^5.16.0",
     "eslint-config-auz": "^1.0.0",
-    "eslint-loader": "^2.2.1",
+    "eslint-loader": "^4.0.2",
     "express": "^4.17.1",
     "jest": "^24.9.0",
     "typescript": "^3.6.3",
     "vue": "^2.6.10",
-    "webpack": "^4.40.2",
-    "webpack-cli": "^3.3.9",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
     "yargs": "^13.3.0"
   },
   "jest": {
